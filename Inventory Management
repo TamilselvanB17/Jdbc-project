@@ -57,7 +57,7 @@ public class InventoryManagement {
 
     static final String USER = "root";
 
-    static final String PASSWORD = "Tamil@2k03"; // CHANGE THIS
+    static final String PASSWORD = "Tamil@2k03"; 
 
 
     // =========================================================
