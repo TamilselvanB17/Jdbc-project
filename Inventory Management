@@ -1,0 +1,1067 @@
+++++++++++++++++++++++++++++++ data base +++++++++++++++++++++++++
+
+
+CREATE DATABASE inventory_db;
+
+USE inventory_db;
+
+CREATE TABLE suppliers (
+    supplier_id INT PRIMARY KEY AUTO_INCREMENT,
+    supplier_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(100)
+);
+
+CREATE TABLE products (
+    product_id INT PRIMARY KEY AUTO_INCREMENT,
+    product_name VARCHAR(100) NOT NULL,
+    category VARCHAR(100),
+    price DECIMAL(10,2) NOT NULL,
+    stock INT NOT NULL,
+    supplier_id INT,
+    FOREIGN KEY (supplier_id)
+        REFERENCES suppliers(supplier_id)
+        ON DELETE SET NULL
+);
+
+CREATE TABLE sales (
+    sale_id INT PRIMARY KEY AUTO_INCREMENT,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    sale_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id)
+        REFERENCES products(product_id)
+);
+
+
+
+
+
+++++++++++++++++++++++++++Java File ++++++++++++++++++++++++++++
+
+
+package jdbcconnect;
+
+import java.sql.*;
+import java.util.Scanner;
+
+public class InventoryManagement {
+
+    // =========================================================
+    // DATABASE CONNECTION
+    // =========================================================
+
+    static final String URL =
+            "jdbc:mysql://localhost:3306/inventory_db";
+
+    static final String USER = "root";
+
+    static final String PASSWORD = "Tamil@2k03"; // CHANGE THIS
+
+
+    // =========================================================
+    // MAIN METHOD
+    // =========================================================
+
+    public static void main(String[] args) {
+
+        Scanner sc = new Scanner(System.in);
+
+        // Test connection
+        try {
+
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
+            Connection con =
+                    DriverManager.getConnection(
+                            URL,
+                            USER,
+                            PASSWORD
+                    );
+
+            System.out.println(
+                    "Database connected successfully!");
+
+            con.close();
+
+        } catch (Exception e) {
+
+            System.out.println(
+                    "Database connection failed!");
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+
+            return;
+        }
+
+
+        int choice;
+
+        do {
+
+            System.out.println("\n==============================================");
+            System.out.println("          INVENTORY MANAGEMENT SYSTEM");
+            System.out.println("==============================================");
+
+            System.out.println("1. Add Supplier");
+            System.out.println("2. Add Product");
+            System.out.println("3. Add Multiple Products - Batch");
+            System.out.println("4. View Products");
+            System.out.println("5. Update Stock");
+            System.out.println("6. Record Sale");
+            System.out.println("7. View Sales");
+            System.out.println("8. Generate Sales Report");
+            System.out.println("9. Inventory Report");
+            System.out.println("10. Exit");
+
+            System.out.print("\nEnter your choice: ");
+
+            choice = sc.nextInt();
+            sc.nextLine();
+
+
+            switch (choice) {
+
+                // =================================================
+                // 1. ADD SUPPLIER
+                // =================================================
+
+                case 1:
+
+                    System.out.println("\n--- ADD SUPPLIER ---");
+
+                    System.out.print("Enter supplier name: ");
+                    String supplierName = sc.nextLine();
+
+                    System.out.print("Enter phone: ");
+                    String phone = sc.nextLine();
+
+                    System.out.print("Enter email: ");
+                    String email = sc.nextLine();
+
+                    addSupplier(
+                            supplierName,
+                            phone,
+                            email
+                    );
+
+                    break;
+
+
+                // =================================================
+                // 2. ADD PRODUCT
+                // =================================================
+
+                case 2:
+
+                    System.out.println("\n--- ADD PRODUCT ---");
+
+                    System.out.print("Enter product name: ");
+                    String productName = sc.nextLine();
+
+                    System.out.print("Enter category: ");
+                    String category = sc.nextLine();
+
+                    System.out.print("Enter price: ");
+                    double price = sc.nextDouble();
+
+                    System.out.print("Enter stock: ");
+                    int stock = sc.nextInt();
+
+                    System.out.print("Enter supplier ID: ");
+                    int supplierId = sc.nextInt();
+
+                    addProduct(
+                            productName,
+                            category,
+                            price,
+                            stock,
+                            supplierId
+                    );
+
+                    break;
+
+
+                // =================================================
+                // 3. BATCH PROCESSING
+                // =================================================
+
+                case 3:
+
+                    System.out.println(
+                            "\n--- BATCH PRODUCT INSERT ---");
+
+                    System.out.print(
+                            "How many products do you want to add? ");
+
+                    int count = sc.nextInt();
+                    sc.nextLine();
+
+                    batchAddProducts(sc, count);
+
+                    break;
+
+
+                // =================================================
+                // 4. VIEW PRODUCTS
+                // =================================================
+
+                case 4:
+
+                    viewProducts();
+
+                    break;
+
+
+                // =================================================
+                // 5. UPDATE STOCK
+                // =================================================
+
+                case 5:
+
+                    System.out.println(
+                            "\n--- UPDATE STOCK ---");
+
+                    System.out.print(
+                            "Enter product ID: ");
+
+                    int productId = sc.nextInt();
+
+                    System.out.print(
+                            "Enter stock quantity to ADD: ");
+
+                    int quantity = sc.nextInt();
+
+                    updateStock(
+                            productId,
+                            quantity
+                    );
+
+                    break;
+
+
+                // =================================================
+                // 6. RECORD SALE
+                // =================================================
+
+                case 6:
+
+                    System.out.println(
+                            "\n--- RECORD SALE ---");
+
+                    System.out.print(
+                            "Enter product ID: ");
+
+                    int saleProductId = sc.nextInt();
+
+                    System.out.print(
+                            "Enter quantity sold: ");
+
+                    int saleQuantity = sc.nextInt();
+
+                    recordSale(
+                            saleProductId,
+                            saleQuantity
+                    );
+
+                    break;
+
+
+                // =================================================
+                // 7. VIEW SALES
+                // =================================================
+
+                case 7:
+
+                    viewSales();
+
+                    break;
+
+
+                // =================================================
+                // 8. SALES REPORT
+                // =================================================
+
+                case 8:
+
+                    generateSalesReport();
+
+                    break;
+
+
+                // =================================================
+                // 9. INVENTORY REPORT
+                // =================================================
+
+                case 9:
+
+                    generateInventoryReport();
+
+                    break;
+
+
+                // =================================================
+                // 10. EXIT
+                // =================================================
+
+                case 10:
+
+                    System.out.println(
+                            "\nThank you for using the system!");
+
+                    break;
+
+
+                default:
+
+                    System.out.println(
+                            "Invalid choice!");
+            }
+
+        } while (choice != 10);
+
+        sc.close();
+    }
+
+
+    // =========================================================
+    // DATABASE CONNECTION METHOD
+    // =========================================================
+
+    static Connection getConnection()
+            throws SQLException {
+
+        return DriverManager.getConnection(
+                URL,
+                USER,
+                PASSWORD
+        );
+    }
+
+
+    // =========================================================
+    // 1. ADD SUPPLIER
+    // =========================================================
+
+    static void addSupplier(
+            String name,
+            String phone,
+            String email) {
+
+        String sql =
+                "INSERT INTO suppliers " +
+                "(supplier_name, phone, email) " +
+                "VALUES (?, ?, ?)";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+            ps.setString(1, name);
+            ps.setString(2, phone);
+            ps.setString(3, email);
+
+            int rows = ps.executeUpdate();
+
+            if (rows > 0) {
+
+                System.out.println(
+                        "Supplier added successfully!");
+
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =========================================================
+    // 2. ADD PRODUCT
+    // =========================================================
+
+    static void addProduct(
+            String name,
+            String category,
+            double price,
+            int stock,
+            int supplierId) {
+
+        String sql =
+                "INSERT INTO products " +
+                "(product_name, category, price, stock, supplier_id) " +
+                "VALUES (?, ?, ?, ?, ?)";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+            ps.setString(1, name);
+            ps.setString(2, category);
+            ps.setDouble(3, price);
+            ps.setInt(4, stock);
+            ps.setInt(5, supplierId);
+
+            int rows = ps.executeUpdate();
+
+            if (rows > 0) {
+
+                System.out.println(
+                        "Product added successfully!");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =========================================================
+    // 3. BATCH PROCESSING
+    // =========================================================
+
+    static void batchAddProducts(
+            Scanner sc,
+            int count) {
+
+        String sql =
+                "INSERT INTO products " +
+                "(product_name, category, price, stock, supplier_id) " +
+                "VALUES (?, ?, ?, ?, ?)";
+
+        Connection con = null;
+
+        try {
+
+            con = getConnection();
+
+            // Disable auto commit
+            con.setAutoCommit(false);
+
+            PreparedStatement ps =
+                    con.prepareStatement(sql);
+
+
+            for (int i = 1; i <= count; i++) {
+
+                System.out.println(
+                        "\nProduct " + i);
+
+                System.out.print(
+                        "Product name: ");
+
+                String name =
+                        sc.nextLine();
+
+                System.out.print(
+                        "Category: ");
+
+                String category =
+                        sc.nextLine();
+
+                System.out.print(
+                        "Price: ");
+
+                double price =
+                        sc.nextDouble();
+
+                System.out.print(
+                        "Stock: ");
+
+                int stock =
+                        sc.nextInt();
+
+                System.out.print(
+                        "Supplier ID: ");
+
+                int supplierId =
+                        sc.nextInt();
+
+                sc.nextLine();
+
+
+                ps.setString(1, name);
+                ps.setString(2, category);
+                ps.setDouble(3, price);
+                ps.setInt(4, stock);
+                ps.setInt(5, supplierId);
+
+                // Add query to batch
+                ps.addBatch();
+            }
+
+
+            // Execute all queries together
+            int[] results =
+                    ps.executeBatch();
+
+
+            // Commit
+            con.commit();
+
+
+            System.out.println(
+                    "\nBatch processing completed!");
+
+            System.out.println(
+                    "Products inserted: "
+                            + results.length);
+
+
+            ps.close();
+
+        } catch (Exception e) {
+
+            System.out.println(
+                    "Batch processing failed!");
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+
+            try {
+
+                if (con != null) {
+
+                    con.rollback();
+
+                    System.out.println(
+                            "Transaction rolled back.");
+                }
+
+            } catch (SQLException ex) {
+
+                System.out.println(
+                        "Rollback error: "
+                                + ex.getMessage());
+            }
+
+        } finally {
+
+            try {
+
+                if (con != null) {
+
+                    con.setAutoCommit(true);
+
+                    con.close();
+                }
+
+            } catch (SQLException e) {
+
+                System.out.println(
+                        "Connection closing error.");
+            }
+        }
+    }
+
+
+    // =========================================================
+    // 4. VIEW PRODUCTS
+    // =========================================================
+
+    static void viewProducts() {
+
+        String sql =
+                "SELECT p.product_id, " +
+                "p.product_name, " +
+                "p.category, " +
+                "p.price, " +
+                "p.stock, " +
+                "s.supplier_name " +
+                "FROM products p " +
+                "LEFT JOIN suppliers s " +
+                "ON p.supplier_id = s.supplier_id " +
+                "ORDER BY p.product_id";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql);
+             ResultSet rs =
+                     ps.executeQuery()) {
+
+
+            System.out.println(
+                    "\n================ PRODUCTS ================");
+
+            boolean found = false;
+
+            while (rs.next()) {
+
+                found = true;
+
+                System.out.println(
+                        "\nProduct ID : "
+                                + rs.getInt("product_id"));
+
+                System.out.println(
+                        "Name       : "
+                                + rs.getString("product_name"));
+
+                System.out.println(
+                        "Category   : "
+                                + rs.getString("category"));
+
+                System.out.println(
+                        "Price      : "
+                                + rs.getDouble("price"));
+
+                System.out.println(
+                        "Stock      : "
+                                + rs.getInt("stock"));
+
+                System.out.println(
+                        "Supplier   : "
+                                + rs.getString("supplier_name"));
+
+                System.out.println(
+                        "------------------------------------------");
+            }
+
+
+            if (!found) {
+
+                System.out.println(
+                        "No products found.");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =========================================================
+    // 5. UPDATE STOCK
+    // =========================================================
+
+    static void updateStock(
+            int productId,
+            int quantity) {
+
+        String sql =
+                "UPDATE products " +
+                "SET stock = stock + ? " +
+                "WHERE product_id=?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+            ps.setInt(1, quantity);
+            ps.setInt(2, productId);
+
+            int rows =
+                    ps.executeUpdate();
+
+            if (rows > 0) {
+
+                System.out.println(
+                        "Stock updated successfully!");
+
+            } else {
+
+                System.out.println(
+                        "Product not found.");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =========================================================
+    // 6. RECORD SALE
+    // =========================================================
+
+    static void recordSale(
+            int productId,
+            int quantity) {
+
+        Connection con = null;
+
+        try {
+
+            con = getConnection();
+
+            // Start transaction
+            con.setAutoCommit(false);
+
+
+            // Get product price and stock
+            String selectSQL =
+                    "SELECT price, stock " +
+                    "FROM products " +
+                    "WHERE product_id=?";
+
+            double price;
+            int stock;
+
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(selectSQL)) {
+
+                ps.setInt(1, productId);
+
+                ResultSet rs =
+                        ps.executeQuery();
+
+                if (!rs.next()) {
+
+                    System.out.println(
+                            "Product not found.");
+
+                    con.rollback();
+
+                    return;
+                }
+
+                price =
+                        rs.getDouble("price");
+
+                stock =
+                        rs.getInt("stock");
+            }
+
+
+            // Check stock
+            if (quantity <= 0) {
+
+                System.out.println(
+                        "Quantity must be greater than zero.");
+
+                con.rollback();
+
+                return;
+            }
+
+
+            if (quantity > stock) {
+
+                System.out.println(
+                        "Insufficient stock.");
+
+                System.out.println(
+                        "Available stock: "
+                                + stock);
+
+                con.rollback();
+
+                return;
+            }
+
+
+            // Calculate total
+            double total =
+                    price * quantity;
+
+
+            // Insert sale
+            String insertSQL =
+                    "INSERT INTO sales " +
+                    "(product_id, quantity, total_amount) " +
+                    "VALUES (?, ?, ?)";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(insertSQL)) {
+
+                ps.setInt(1, productId);
+                ps.setInt(2, quantity);
+                ps.setDouble(3, total);
+
+                ps.executeUpdate();
+            }
+
+
+            // Reduce stock
+            String updateSQL =
+                    "UPDATE products " +
+                    "SET stock = stock - ? " +
+                    "WHERE product_id=?";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(updateSQL)) {
+
+                ps.setInt(1, quantity);
+                ps.setInt(2, productId);
+
+                ps.executeUpdate();
+            }
+
+
+            // Commit
+            con.commit();
+
+
+            System.out.println(
+                    "\nSale recorded successfully!");
+
+            System.out.println(
+                    "Quantity sold : "
+                            + quantity);
+
+            System.out.println(
+                    "Total amount  : "
+                            + total);
+
+        } catch (Exception e) {
+
+            System.out.println(
+                    "Sale failed!");
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+
+            try {
+
+                if (con != null) {
+
+                    con.rollback();
+
+                    System.out.println(
+                            "Transaction rolled back.");
+                }
+
+            } catch (SQLException ex) {
+
+                System.out.println(
+                        "Rollback error: "
+                                + ex.getMessage());
+            }
+
+        } finally {
+
+            try {
+
+                if (con != null) {
+
+                    con.setAutoCommit(true);
+
+                    con.close();
+                }
+
+            } catch (SQLException e) {
+
+                System.out.println(
+                        "Connection closing error.");
+            }
+        }
+    }
+
+
+    // =========================================================
+    // 7. VIEW SALES
+    // =========================================================
+
+    static void viewSales() {
+
+        String sql =
+                "SELECT s.sale_id, " +
+                "p.product_name, " +
+                "s.quantity, " +
+                "s.total_amount, " +
+                "s.sale_date " +
+                "FROM sales s " +
+                "JOIN products p " +
+                "ON s.product_id = p.product_id " +
+                "ORDER BY s.sale_id";
+
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql);
+             ResultSet rs =
+                     ps.executeQuery()) {
+
+
+            System.out.println(
+                    "\n================ SALES ================");
+
+            boolean found = false;
+
+            while (rs.next()) {
+
+                found = true;
+
+                System.out.println(
+                        "\nSale ID     : "
+                                + rs.getInt("sale_id"));
+
+                System.out.println(
+                        "Product     : "
+                                + rs.getString("product_name"));
+
+                System.out.println(
+                        "Quantity    : "
+                                + rs.getInt("quantity"));
+
+                System.out.println(
+                        "Total       : "
+                                + rs.getDouble("total_amount"));
+
+                System.out.println(
+                        "Sale Date   : "
+                                + rs.getTimestamp("sale_date"));
+
+                System.out.println(
+                        "----------------------------------------");
+            }
+
+
+            if (!found) {
+
+                System.out.println(
+                        "No sales found.");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =========================================================
+    // 8. SALES REPORT
+    // AGGREGATE FUNCTIONS
+    // =========================================================
+
+    static void generateSalesReport() {
+
+        String sql =
+                "SELECT " +
+                "COUNT(*) AS total_sales, " +
+                "SUM(quantity) AS total_items, " +
+                "SUM(total_amount) AS total_revenue, " +
+                "AVG(total_amount) AS average_sale " +
+                "FROM sales";
+
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql);
+             ResultSet rs =
+                     ps.executeQuery()) {
+
+
+            if (rs.next()) {
+
+                System.out.println(
+                        "\n==========================================");
+
+                System.out.println(
+                        "             SALES REPORT");
+
+                System.out.println(
+                        "==========================================");
+
+
+                System.out.println(
+                        "Total Sales       : "
+                                + rs.getInt("total_sales"));
+
+
+                System.out.println(
+                        "Items Sold        : "
+                                + rs.getInt("total_items"));
+
+
+                System.out.println(
+                        "Total Revenue     : "
+                                + rs.getDouble("total_revenue"));
+
+
+                System.out.println(
+                        "Average Sale      : "
+                                + rs.getDouble("average_sale"));
+
+
+                System.out.println(
+                        "==========================================");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =========================================================
+    // 9. INVENTORY REPORT
+    // AGGREGATE FUNCTIONS
+    // =========================================================
+
+    static void generateInventoryReport() {
+
+        String sql =
+                "SELECT " +
+                "COUNT(*) AS total_products, " +
+                "SUM(stock) AS total_stock, " +
+                "AVG(price) AS average_price, " +
+                "SUM(stock * price) AS inventory_value " +
+                "FROM products";
+
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql);
+             ResultSet rs =
+                     ps.executeQuery()) {
+
+
+            if (rs.next()) {
+
+                System.out.println(
+                        "\n==========================================");
+
+                System.out.println(
+                        "           INVENTORY REPORT");
+
+                System.out.println(
+                        "==========================================");
+
+
+                System.out.println(
+                        "Total Products    : "
+                                + rs.getInt("total_products"));
+
+
+                System.out.println(
+                        "Total Stock       : "
+                                + rs.getInt("total_stock"));
+
+
+                System.out.println(
+                        "Average Price     : "
+                                + rs.getDouble("average_price"));
+
+
+                System.out.println(
+                        "Inventory Value   : "
+                                + rs.getDouble("inventory_value"));
+
+
+                System.out.println(
+                        "==========================================");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+}
