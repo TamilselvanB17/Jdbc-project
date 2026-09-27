@@ -1,0 +1,1117 @@
+------------------------- My Sql -------------------------------
+CREATE DATABASE employee_leave_db;
+
+USE employee_leave_db;
+
+CREATE TABLE employees (
+    employee_id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    department VARCHAR(100),
+    designation VARCHAR(100)
+);
+
+CREATE TABLE leave_balance (
+    balance_id INT PRIMARY KEY AUTO_INCREMENT,
+    employee_id INT NOT NULL,
+    total_leaves INT DEFAULT 20,
+    used_leaves INT DEFAULT 0,
+    remaining_leaves INT DEFAULT 20,
+
+    FOREIGN KEY (employee_id)
+        REFERENCES employees(employee_id)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE leave_requests (
+    leave_id INT PRIMARY KEY AUTO_INCREMENT,
+    employee_id INT NOT NULL,
+    leave_type VARCHAR(50) NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    days INT NOT NULL,
+    reason VARCHAR(255),
+    status VARCHAR(20) DEFAULT 'PENDING',
+
+    FOREIGN KEY (employee_id)
+        REFERENCES employees(employee_id)
+        ON DELETE CASCADE
+);
+
+
+
+
++++++++++++++++++++++++++++++++++ Java File ++++++++++++++++++++++++++++++++++++++++
+
+package jdbcconnect;
+
+
+
+import java.sql.*;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Scanner;
+
+public class TestDB {
+
+    
+
+    static final String URL =
+            "jdbc:mysql://localhost:3306/employee_leave_db";
+
+    static final String USER = "root";
+
+    static final String PASSWORD = "Tamil@2k03"; 
+
+
+    // ================= MAIN METHOD =================
+
+    public static void main(String[] args) {
+
+        Scanner sc = new Scanner(System.in);
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+
+            Connection con = DriverManager.getConnection(
+                    URL, USER, PASSWORD);
+
+            System.out.println("Database connected successfully!");
+
+            con.close();
+
+        } catch (Exception e) {
+
+            System.out.println(
+                    "Database connection failed: "
+                            + e.getMessage());
+
+            return;
+        }
+
+
+        int choice;
+
+        do {
+
+            System.out.println("\n==============================================");
+            System.out.println("       EMPLOYEE LEAVE MANAGEMENT SYSTEM");
+            System.out.println("==============================================");
+
+            System.out.println("1. Employee Registration");
+            System.out.println("2. View Employees");
+            System.out.println("3. Update Employee");
+            System.out.println("4. Delete Employee");
+            System.out.println("5. Apply Leave");
+            System.out.println("6. View Leave Requests");
+            System.out.println("7. Approve Leave");
+            System.out.println("8. Reject Leave");
+            System.out.println("9. Check Leave Balance");
+            System.out.println("10. Exit");
+
+            System.out.print("\nEnter your choice: ");
+
+            choice = sc.nextInt();
+            sc.nextLine();
+
+
+            switch (choice) {
+
+                // =================================================
+                // 1. EMPLOYEE REGISTRATION
+                // =================================================
+
+                case 1:
+
+                    System.out.println("\n--- EMPLOYEE REGISTRATION ---");
+
+                    System.out.print("Enter employee name: ");
+                    String name = sc.nextLine();
+
+                    System.out.print("Enter email: ");
+                    String email = sc.nextLine();
+
+                    System.out.print("Enter department: ");
+                    String department = sc.nextLine();
+
+                    System.out.print("Enter designation: ");
+                    String designation = sc.nextLine();
+
+                    addEmployee(
+                            name,
+                            email,
+                            department,
+                            designation
+                    );
+
+                    break;
+
+
+                // =================================================
+                // 2. VIEW EMPLOYEES
+                // =================================================
+
+                case 2:
+
+                    viewEmployees();
+
+                    break;
+
+
+                // =================================================
+                // 3. UPDATE EMPLOYEE
+                // =================================================
+
+                case 3:
+
+                    System.out.println("\n--- UPDATE EMPLOYEE ---");
+
+                    System.out.print("Enter employee ID: ");
+                    int updateId = sc.nextInt();
+                    sc.nextLine();
+
+                    System.out.print("Enter new name: ");
+                    String newName = sc.nextLine();
+
+                    System.out.print("Enter new email: ");
+                    String newEmail = sc.nextLine();
+
+                    System.out.print("Enter new department: ");
+                    String newDepartment = sc.nextLine();
+
+                    System.out.print("Enter new designation: ");
+                    String newDesignation = sc.nextLine();
+
+                    updateEmployee(
+                            updateId,
+                            newName,
+                            newEmail,
+                            newDepartment,
+                            newDesignation
+                    );
+
+                    break;
+
+
+                // =================================================
+                // 4. DELETE EMPLOYEE
+                // =================================================
+
+                case 4:
+
+                    System.out.println("\n--- DELETE EMPLOYEE ---");
+
+                    System.out.print("Enter employee ID: ");
+                    int deleteId = sc.nextInt();
+
+                    deleteEmployee(deleteId);
+
+                    break;
+
+
+                // =================================================
+                // 5. APPLY LEAVE
+                // =================================================
+
+                case 5:
+
+                    System.out.println("\n--- APPLY LEAVE ---");
+
+                    System.out.print("Enter employee ID: ");
+                    int employeeId = sc.nextInt();
+                    sc.nextLine();
+
+                    System.out.print(
+                            "Enter leave type (CASUAL/SICK/ANNUAL): ");
+
+                    String leaveType = sc.nextLine();
+
+                    System.out.print(
+                            "Enter start date (YYYY-MM-DD): ");
+
+                    String startDate = sc.nextLine();
+
+                    System.out.print(
+                            "Enter end date (YYYY-MM-DD): ");
+
+                    String endDate = sc.nextLine();
+
+                    System.out.print("Enter reason: ");
+
+                    String reason = sc.nextLine();
+
+                    applyLeave(
+                            employeeId,
+                            leaveType,
+                            startDate,
+                            endDate,
+                            reason
+                    );
+
+                    break;
+
+
+                // =================================================
+                // 6. VIEW LEAVE REQUESTS
+                // =================================================
+
+                case 6:
+
+                    viewLeaveRequests();
+
+                    break;
+
+
+                // =================================================
+                // 7. APPROVE LEAVE
+                // =================================================
+
+                case 7:
+
+                    System.out.println("\n--- APPROVE LEAVE ---");
+
+                    System.out.print("Enter leave ID: ");
+
+                    int approveId = sc.nextInt();
+
+                    approveLeave(approveId);
+
+                    break;
+
+
+                // =================================================
+                // 8. REJECT LEAVE
+                // =================================================
+
+                case 8:
+
+                    System.out.println("\n--- REJECT LEAVE ---");
+
+                    System.out.print("Enter leave ID: ");
+
+                    int rejectId = sc.nextInt();
+
+                    rejectLeave(rejectId);
+
+                    break;
+
+
+                // =================================================
+                // 9. LEAVE BALANCE
+                // =================================================
+
+                case 9:
+
+                    System.out.println("\n--- LEAVE BALANCE ---");
+
+                    System.out.print("Enter employee ID: ");
+
+                    int balanceId = sc.nextInt();
+
+                    viewLeaveBalance(balanceId);
+
+                    break;
+
+
+                // =================================================
+                // 10. EXIT
+                // =================================================
+
+                case 10:
+
+                    System.out.println(
+                            "\nThank you for using the system!");
+
+                    break;
+
+
+                default:
+
+                    System.out.println(
+                            "Invalid choice!");
+
+            }
+
+        } while (choice != 10);
+
+        sc.close();
+    }
+
+
+    // =============================================================
+    // DATABASE CONNECTION
+    // =============================================================
+
+    static Connection getConnection() throws SQLException {
+
+        return DriverManager.getConnection(
+                URL,
+                USER,
+                PASSWORD
+        );
+    }
+
+
+    // =============================================================
+    // 1. ADD EMPLOYEE
+    // =============================================================
+
+    static void addEmployee(
+            String name,
+            String email,
+            String department,
+            String designation) {
+
+        String sql =
+                "INSERT INTO employees " +
+                "(name, email, department, designation) " +
+                "VALUES (?, ?, ?, ?)";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(
+                             sql,
+                             Statement.RETURN_GENERATED_KEYS)) {
+
+            ps.setString(1, name);
+            ps.setString(2, email);
+            ps.setString(3, department);
+            ps.setString(4, designation);
+
+            int rows = ps.executeUpdate();
+
+            if (rows > 0) {
+
+                ResultSet rs = ps.getGeneratedKeys();
+
+                if (rs.next()) {
+
+                    int employeeId = rs.getInt(1);
+
+                    // Automatically create leave balance
+                    String balanceSQL =
+                            "INSERT INTO leave_balance " +
+                            "(employee_id, total_leaves, " +
+                            "used_leaves, remaining_leaves) " +
+                            "VALUES (?, 20, 0, 20)";
+
+                    try (PreparedStatement balancePS =
+                                 con.prepareStatement(balanceSQL)) {
+
+                        balancePS.setInt(1, employeeId);
+
+                        balancePS.executeUpdate();
+                    }
+                }
+
+                System.out.println(
+                        "Employee registered successfully!");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =============================================================
+    // 2. VIEW EMPLOYEES
+    // =============================================================
+
+    static void viewEmployees() {
+
+        String sql = "SELECT * FROM employees";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            System.out.println(
+                    "\n================ EMPLOYEES ================");
+
+            boolean found = false;
+
+            while (rs.next()) {
+
+                found = true;
+
+                System.out.println(
+                        "\nEmployee ID : "
+                                + rs.getInt("employee_id"));
+
+                System.out.println(
+                        "Name        : "
+                                + rs.getString("name"));
+
+                System.out.println(
+                        "Email       : "
+                                + rs.getString("email"));
+
+                System.out.println(
+                        "Department  : "
+                                + rs.getString("department"));
+
+                System.out.println(
+                        "Designation : "
+                                + rs.getString("designation"));
+
+                System.out.println(
+                        "-------------------------------------------");
+            }
+
+            if (!found) {
+                System.out.println("No employees found.");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =============================================================
+    // 3. UPDATE EMPLOYEE
+    // =============================================================
+
+    static void updateEmployee(
+            int id,
+            String name,
+            String email,
+            String department,
+            String designation) {
+
+        String sql =
+                "UPDATE employees SET " +
+                "name=?, email=?, department=?, designation=? " +
+                "WHERE employee_id=?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+            ps.setString(1, name);
+            ps.setString(2, email);
+            ps.setString(3, department);
+            ps.setString(4, designation);
+            ps.setInt(5, id);
+
+            int rows = ps.executeUpdate();
+
+            if (rows > 0) {
+
+                System.out.println(
+                        "Employee updated successfully!");
+
+            } else {
+
+                System.out.println(
+                        "Employee not found.");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =============================================================
+    // 4. DELETE EMPLOYEE
+    // =============================================================
+
+    static void deleteEmployee(int id) {
+
+        String sql =
+                "DELETE FROM employees WHERE employee_id=?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+
+            int rows = ps.executeUpdate();
+
+            if (rows > 0) {
+
+                System.out.println(
+                        "Employee deleted successfully!");
+
+            } else {
+
+                System.out.println(
+                        "Employee not found.");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =============================================================
+    // 5. APPLY LEAVE
+    // =============================================================
+
+    static void applyLeave(
+            int employeeId,
+            String leaveType,
+            String startDate,
+            String endDate,
+            String reason) {
+
+        try (Connection con = getConnection()) {
+
+            LocalDate start =
+                    LocalDate.parse(startDate);
+
+            LocalDate end =
+                    LocalDate.parse(endDate);
+
+
+            // Validate dates
+            if (end.isBefore(start)) {
+
+                System.out.println(
+                        "End date cannot be before start date.");
+
+                return;
+            }
+
+
+            // Calculate number of days
+            int days =
+                    (int) ChronoUnit.DAYS.between(
+                            start, end) + 1;
+
+
+            // Check employee
+            String employeeSQL =
+                    "SELECT employee_id " +
+                    "FROM employees " +
+                    "WHERE employee_id=?";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(employeeSQL)) {
+
+                ps.setInt(1, employeeId);
+
+                ResultSet rs =
+                        ps.executeQuery();
+
+                if (!rs.next()) {
+
+                    System.out.println(
+                            "Employee not found.");
+
+                    return;
+                }
+            }
+
+
+            // Check leave balance
+            String balanceSQL =
+                    "SELECT remaining_leaves " +
+                    "FROM leave_balance " +
+                    "WHERE employee_id=?";
+
+            int remainingLeaves;
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(balanceSQL)) {
+
+                ps.setInt(1, employeeId);
+
+                ResultSet rs =
+                        ps.executeQuery();
+
+                if (!rs.next()) {
+
+                    System.out.println(
+                            "Leave balance not found.");
+
+                    return;
+                }
+
+                remainingLeaves =
+                        rs.getInt("remaining_leaves");
+            }
+
+
+            // Check available leaves
+            if (days > remainingLeaves) {
+
+                System.out.println(
+                        "Insufficient leave balance.");
+
+                System.out.println(
+                        "Available leaves: "
+                                + remainingLeaves);
+
+                return;
+            }
+
+
+            // Insert leave request
+            String sql =
+                    "INSERT INTO leave_requests " +
+                    "(employee_id, leave_type, " +
+                    "start_date, end_date, days, " +
+                    "reason, status) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, 'PENDING')";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(sql)) {
+
+                ps.setInt(1, employeeId);
+                ps.setString(2, leaveType);
+                ps.setDate(
+                        3,
+                        Date.valueOf(start));
+                ps.setDate(
+                        4,
+                        Date.valueOf(end));
+                ps.setInt(5, days);
+                ps.setString(6, reason);
+
+                ps.executeUpdate();
+
+                System.out.println(
+                        "\nLeave applied successfully!");
+
+                System.out.println(
+                        "Number of days: " + days);
+
+                System.out.println(
+                        "Status: PENDING");
+            }
+
+        } catch (Exception e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =============================================================
+    // 6. VIEW LEAVE REQUESTS
+    // =============================================================
+
+    static void viewLeaveRequests() {
+
+        String sql =
+                "SELECT lr.leave_id, " +
+                "e.name, " +
+                "lr.leave_type, " +
+                "lr.start_date, " +
+                "lr.end_date, " +
+                "lr.days, " +
+                "lr.reason, " +
+                "lr.status " +
+                "FROM leave_requests lr " +
+                "JOIN employees e " +
+                "ON lr.employee_id = e.employee_id " +
+                "ORDER BY lr.leave_id";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql);
+             ResultSet rs =
+                     ps.executeQuery()) {
+
+            System.out.println(
+                    "\n================ LEAVE REQUESTS ================");
+
+            boolean found = false;
+
+            while (rs.next()) {
+
+                found = true;
+
+                System.out.println(
+                        "\nLeave ID   : "
+                                + rs.getInt("leave_id"));
+
+                System.out.println(
+                        "Employee   : "
+                                + rs.getString("name"));
+
+                System.out.println(
+                        "Leave Type : "
+                                + rs.getString("leave_type"));
+
+                System.out.println(
+                        "Start Date : "
+                                + rs.getDate("start_date"));
+
+                System.out.println(
+                        "End Date   : "
+                                + rs.getDate("end_date"));
+
+                System.out.println(
+                        "Days       : "
+                                + rs.getInt("days"));
+
+                System.out.println(
+                        "Reason     : "
+                                + rs.getString("reason"));
+
+                System.out.println(
+                        "Status     : "
+                                + rs.getString("status"));
+
+                System.out.println(
+                        "----------------------------------------------");
+            }
+
+            if (!found) {
+
+                System.out.println(
+                        "No leave requests found.");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =============================================================
+    // 7. APPROVE LEAVE - TRANSACTION
+    // =============================================================
+
+    static void approveLeave(int leaveId) {
+
+        Connection con = null;
+
+        try {
+
+            con = getConnection();
+
+            // Start transaction
+            con.setAutoCommit(false);
+
+
+            // Get leave request
+            String selectSQL =
+                    "SELECT employee_id, days, status " +
+                    "FROM leave_requests " +
+                    "WHERE leave_id=?";
+
+            int employeeId;
+            int days;
+            String status;
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(selectSQL)) {
+
+                ps.setInt(1, leaveId);
+
+                ResultSet rs =
+                        ps.executeQuery();
+
+                if (!rs.next()) {
+
+                    System.out.println(
+                            "Leave request not found.");
+
+                    con.rollback();
+
+                    return;
+                }
+
+                employeeId =
+                        rs.getInt("employee_id");
+
+                days =
+                        rs.getInt("days");
+
+                status =
+                        rs.getString("status");
+            }
+
+
+            // Only pending request can be approved
+            if (!status.equalsIgnoreCase("PENDING")) {
+
+                System.out.println(
+                        "Only PENDING leave can be approved.");
+
+                con.rollback();
+
+                return;
+            }
+
+
+            // Check leave balance
+            String balanceSQL =
+                    "SELECT remaining_leaves " +
+                    "FROM leave_balance " +
+                    "WHERE employee_id=?";
+
+            int remaining;
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(balanceSQL)) {
+
+                ps.setInt(1, employeeId);
+
+                ResultSet rs =
+                        ps.executeQuery();
+
+                if (!rs.next()) {
+
+                    System.out.println(
+                            "Leave balance not found.");
+
+                    con.rollback();
+
+                    return;
+                }
+
+                remaining =
+                        rs.getInt("remaining_leaves");
+            }
+
+
+            if (days > remaining) {
+
+                System.out.println(
+                        "Insufficient leave balance.");
+
+                con.rollback();
+
+                return;
+            }
+
+
+            // Update leave status
+            String updateLeaveSQL =
+                    "UPDATE leave_requests " +
+                    "SET status='APPROVED' " +
+                    "WHERE leave_id=?";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(
+                                 updateLeaveSQL)) {
+
+                ps.setInt(1, leaveId);
+
+                ps.executeUpdate();
+            }
+
+
+            // Update leave balance
+            String updateBalanceSQL =
+                    "UPDATE leave_balance " +
+                    "SET used_leaves = used_leaves + ?, " +
+                    "remaining_leaves = " +
+                    "remaining_leaves - ? " +
+                    "WHERE employee_id=?";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(
+                                 updateBalanceSQL)) {
+
+                ps.setInt(1, days);
+                ps.setInt(2, days);
+                ps.setInt(3, employeeId);
+
+                ps.executeUpdate();
+            }
+
+
+            // Commit transaction
+            con.commit();
+
+            System.out.println(
+                    "\nLeave approved successfully!");
+
+            System.out.println(
+                    "Leave balance updated successfully!");
+
+        } catch (Exception e) {
+
+            System.out.println(
+                    "\nTransaction failed!");
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+
+            try {
+
+                if (con != null) {
+
+                    con.rollback();
+
+                    System.out.println(
+                            "Transaction rolled back.");
+                }
+
+            } catch (SQLException ex) {
+
+                System.out.println(
+                        "Rollback error: "
+                                + ex.getMessage());
+            }
+
+        } finally {
+
+            try {
+
+                if (con != null) {
+
+                    con.setAutoCommit(true);
+
+                    con.close();
+                }
+
+            } catch (SQLException e) {
+
+                System.out.println(
+                        "Connection close error: "
+                                + e.getMessage());
+            }
+        }
+    }
+
+
+    // =============================================================
+    // 8. REJECT LEAVE
+    // =============================================================
+
+    static void rejectLeave(int leaveId) {
+
+        String checkSQL =
+                "SELECT status " +
+                "FROM leave_requests " +
+                "WHERE leave_id=?";
+
+        String updateSQL =
+                "UPDATE leave_requests " +
+                "SET status='REJECTED' " +
+                "WHERE leave_id=?";
+
+        try (Connection con = getConnection();
+             PreparedStatement checkPS =
+                     con.prepareStatement(checkSQL)) {
+
+            checkPS.setInt(1, leaveId);
+
+            ResultSet rs =
+                    checkPS.executeQuery();
+
+            if (!rs.next()) {
+
+                System.out.println(
+                        "Leave request not found.");
+
+                return;
+            }
+
+
+            String status =
+                    rs.getString("status");
+
+
+            if (!status.equalsIgnoreCase("PENDING")) {
+
+                System.out.println(
+                        "Only PENDING leave can be rejected.");
+
+                return;
+            }
+
+
+            try (PreparedStatement updatePS =
+                         con.prepareStatement(updateSQL)) {
+
+                updatePS.setInt(1, leaveId);
+
+                updatePS.executeUpdate();
+
+                System.out.println(
+                        "Leave rejected successfully!");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+
+
+    // =============================================================
+    // 9. VIEW LEAVE BALANCE
+    // =============================================================
+
+    static void viewLeaveBalance(int employeeId) {
+
+        String sql =
+                "SELECT e.name, " +
+                "lb.total_leaves, " +
+                "lb.used_leaves, " +
+                "lb.remaining_leaves " +
+                "FROM employees e " +
+                "JOIN leave_balance lb " +
+                "ON e.employee_id = lb.employee_id " +
+                "WHERE e.employee_id=?";
+
+        try (Connection con = getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(sql)) {
+
+            ps.setInt(1, employeeId);
+
+            ResultSet rs =
+                    ps.executeQuery();
+
+            if (rs.next()) {
+
+                System.out.println(
+                        "\n==================================");
+
+                System.out.println(
+                        "Employee Name    : "
+                                + rs.getString("name"));
+
+                System.out.println(
+                        "Total Leaves     : "
+                                + rs.getInt("total_leaves"));
+
+                System.out.println(
+                        "Used Leaves      : "
+                                + rs.getInt("used_leaves"));
+
+                System.out.println(
+                        "Remaining Leaves : "
+                                + rs.getInt("remaining_leaves"));
+
+                System.out.println(
+                        "==================================");
+
+            } else {
+
+                System.out.println(
+                        "Employee not found.");
+            }
+
+        } catch (SQLException e) {
+
+            System.out.println(
+                    "Error: " + e.getMessage());
+        }
+    }
+}
